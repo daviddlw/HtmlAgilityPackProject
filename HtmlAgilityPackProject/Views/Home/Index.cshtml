@@ -1,0 +1,30 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+<h2>@ViewBag.Message</h2>
+<p>
+    To learn more about ASP.NET MVC visit <a href="http://asp.net/mvc" title="ASP.NET MVC Website">
+        http://asp.net/mvc</a>.
+</p>
+<p>
+    @using (Html.BeginForm("TestSpider", "Home"))
+    {
+        @Html.TextBox("txtKeyword", "");
+        <input type="button" value="蜘蛛测试" id="btnSpider" name="btnSpider" onclick="spider();" />
+    }
+</p>
+<p id="spiderResult">
+</p>
+<script language="javascript" type="text/javascript">
+    var spider = function () {
+        $.ajax({
+            url: "/Home/TestSpider",
+            type: "post",
+            dataType: "json",
+            data: { keyword: $("#txtKeyword").val() },
+            success: function (result) {
+                $("#spiderResult").html(result.isSuccess);
+            }
+        });
+    }
+</script>
