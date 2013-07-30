@@ -1,6 +1,7 @@
 ﻿@{
     ViewBag.Title = "Home Page";
 }
+@using HtmlAgilityPackProject.Models;
 <h2>@ViewBag.Message</h2>
 <p>
     To learn more about ASP.NET MVC visit <a href="http://asp.net/mvc" title="ASP.NET MVC Website">
@@ -11,20 +12,27 @@
     {
         @Html.TextBox("txtKeyword", "");
         <input type="button" value="蜘蛛测试" id="btnSpider" name="btnSpider" onclick="spider();" />
-    }
+        @Html.DropDownList("dropdownSearchEngine", new List<SelectListItem>() {
+            new SelectListItem(){ Text="百度", Value = ((int)SearchEngineEnum.Baidu).ToString() },
+            new SelectListItem(){ Text="搜狗", Value = ((int)SearchEngineEnum.Sogou).ToString() },
+            new SelectListItem(){ Text="360", Value = ((int)SearchEngineEnum.Qihu).ToString() }
+    }) }
 </p>
 <p id="spiderResult">
 </p>
 <script language="javascript" type="text/javascript">
+
     var spider = function () {
         $.ajax({
             url: "/Home/TestSpider",
             type: "post",
             dataType: "json",
-            data: { keyword: $("#txtKeyword").val() },
+            data: { keyword: $("#txtKeyword").val(), searchEngine: $("#dropdownSearchEngine").val() },
             success: function (result) {
                 $("#spiderResult").html(result.isSuccess);
             }
         });
     }
+
+    
 </script>

@@ -16,6 +16,7 @@ namespace HtmlAgilityPackProject.Controllers
 
         private HtmlWeb webClient = new HtmlWeb();
         private const string FILE_PATH = @"J:\软件项目\HtmlAgilityPackProject\";
+        private const string ANTI_URL = @"http://mp3.sogou.com/antispider/";
 
         #endregion
 
@@ -32,7 +33,18 @@ namespace HtmlAgilityPackProject.Controllers
         public JsonResult TestSpider()
         {
             string keyword = Request.Form["keyword"] == null ? string.Empty : Request.Form["keyword"].ToString().Trim();
-            string message = SogouSpiderSearch(keyword) ? "<span style=\"color:Green;\">爬虫成功</span>" : "<span style=\"color:Red;\">爬虫失败</span>";
+            int searchEngine = Request.Form["searchEngine"] == null ? (int)SearchEngineEnum.Baidu : Convert.ToInt32(Request.Form["searchEngine"].ToString().Trim());
+
+            string message = string.Empty;
+            switch (searchEngine)
+            {
+                case (int)SearchEngineEnum.Baidu: message = BaiduSpiderSearch(keyword) ? "<span style=\"color:Green;\">爬虫成功</span>" : "<span style=\"color:Red;\">爬虫失败</span>"; break;
+                case (int)SearchEngineEnum.Sogou: message = SogouSpiderSearch(keyword) ? "<span style=\"color:Green;\">爬虫成功</span>" : "<span style=\"color:Red;\">爬虫失败</span>"; break;
+                case (int)SearchEngineEnum.Qihu: message = QihuSpiderSearch(keyword) ? "<span style=\"color:Green;\">爬虫成功</span>" : "<span style=\"color:Red;\">爬虫失败</span>"; break;
+                default:
+                    message = QihuSpiderSearch(keyword) ? "<span style=\"color:Green;\">爬虫成功</span>" : "<span style=\"color:Red;\">爬虫失败</span>"; break;
+            }
+
             return Json(new { isSuccess = message }, JsonRequestBehavior.AllowGet);
         }
 
@@ -41,11 +53,12 @@ namespace HtmlAgilityPackProject.Controllers
         /// </summary>
         /// <param name="filepath"></param>
         /// <returns></returns>
-        private bool BaiduSpiderSearch(string keyword)
+        public bool BaiduSpiderSearch(string keyword)
         {
             List<KeywordRank> keywordRankLs = new List<KeywordRank>();
             string url = string.Format("http://www.baidu.com/s?wd={0}", HttpUtility.UrlEncode(keyword, Encoding.UTF8));
             HtmlDocument htmlDoc = webClient.Load(url);
+            string docHtml = htmlDoc.DocumentNode.InnerHtml;
             HtmlNodeCollection leftLinkNodes = htmlDoc.DocumentNode.SelectNodes(".//div[@id='content_left']/table[contains(@class,'ec_pp_f')]");
             int rank = 1;
             HtmlNode titleNode, descNode, urlNode;
@@ -101,6 +114,7 @@ namespace HtmlAgilityPackProject.Controllers
 
             string url = string.Format("http://www.so.com/s?ie=utf-8&src=360sou_home&q={0}", HttpUtility.UrlEncode(keyword, Encoding.UTF8));
             HtmlDocument htmlDoc = webClient.Load(url);
+            string docHtml = htmlDoc.DocumentNode.InnerHtml;
             HtmlNodeCollection leftLinkNodes = htmlDoc.DocumentNode.SelectNodes(".//div[@class='spread']/ul[contains(@id,'djbox')]/li");
             int rank = 1;
             HtmlNode titleNode, descNode, urlNode;
@@ -148,8 +162,10 @@ namespace HtmlAgilityPackProject.Controllers
         {
             List<KeywordRank> keywordRankLs = new List<KeywordRank>();
 
-            string url = string.Format("http://www.sogou.com/web?query={0}", HttpUtility.UrlEncode(keyword, Encoding.UTF8));
+            string url = string.Format("http://www.sogou.com/web?query={0}", HttpUtility.UrlEncode(keyword, Encoding.GetEncoding("gb2312")));
+
             HtmlDocument htmlDoc = webClient.Load(url);
+            string docHtml = htmlDoc.DocumentNode.InnerHtml;
             HtmlNodeCollection leftLinkNodes = htmlDoc.DocumentNode.SelectNodes(".//div[@class='spread']/ul[contains(@id,'djbox')]/li");
             int rank = 1;
             HtmlNode titleNode, descNode, urlNode;
