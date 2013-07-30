@@ -15,7 +15,7 @@ namespace HtmlAgilityPackProject.Controllers
         #region 私有变量
 
         private HtmlWeb webClient = new HtmlWeb();
-        private const string FILE_PATH = @"G:\软件项目\HtmlAgilityPackProject\";
+        private const string FILE_PATH = @"J:\软件项目\HtmlAgilityPackProject\";
 
         #endregion
 
@@ -32,7 +32,7 @@ namespace HtmlAgilityPackProject.Controllers
         public JsonResult TestSpider()
         {
             string keyword = Request.Form["keyword"] == null ? string.Empty : Request.Form["keyword"].ToString().Trim();
-            string message = QihuSpiderSearch(keyword) ? "<span style=\"color:Green;\">爬虫成功</span>" : "<span style=\"color:Red;\">爬虫失败</span>";
+            string message = SogouSpiderSearch(keyword) ? "<span style=\"color:Green;\">爬虫成功</span>" : "<span style=\"color:Red;\">爬虫失败</span>";
             return Json(new { isSuccess = message }, JsonRequestBehavior.AllowGet);
         }
 
@@ -98,7 +98,57 @@ namespace HtmlAgilityPackProject.Controllers
         private bool QihuSpiderSearch(string keyword)
         {
             List<KeywordRank> keywordRankLs = new List<KeywordRank>();
+
             string url = string.Format("http://www.so.com/s?ie=utf-8&src=360sou_home&q={0}", HttpUtility.UrlEncode(keyword, Encoding.UTF8));
+            HtmlDocument htmlDoc = webClient.Load(url);
+            HtmlNodeCollection leftLinkNodes = htmlDoc.DocumentNode.SelectNodes(".//div[@class='spread']/ul[contains(@id,'djbox')]/li");
+            int rank = 1;
+            HtmlNode titleNode, descNode, urlNode;
+            if (leftLinkNodes != null)
+            {
+                foreach (HtmlNode item in leftLinkNodes)
+                {
+                    KeywordRank keywordRank = new KeywordRank();
+                    keywordRank.Position = PositionEnum.Left;
+                    titleNode = item.SelectSingleNode("./h3/a[@_cs]");
+                    if (titleNode != null)
+                        keywordRank.CreativeTitle = titleNode.InnerHtml.Replace("<em color=\"red\">", "{").Replace("</em>", "}");
+                    descNode = item.SelectSingleNode("./p");
+                    if (descNode != null)
+                        keywordRank.CreativeDesc = descNode.InnerHtml.Replace("<em color=\"red\">", "{").Replace("</em>", "}");
+                    urlNode = item.SelectSingleNode("./p/cite");
+                    if (urlNode != null)
+                        keywordRank.DisplayUrl = urlNode.InnerText.Trim();
+                    keywordRank.Rank = rank;
+                    if (keywordRankLs.Where(n => n.DisplayUrl == keywordRank.DisplayUrl && n.CreativeTitle == keywordRank.CreativeTitle && n.CreativeDesc == keywordRank.CreativeDesc).Count() <= 0)
+                        keywordRankLs.Add(keywordRank);
+                    rank++;
+                }
+            }
+            try
+            {
+                string qihuSpiderFile = string.Format("{0}{1}.txt", FILE_PATH, "qihu_spider");
+                SaveSpiderFile(qihuSpiderFile, keywordRankLs);
+
+                return true;
+            }
+            catch (IOException ex)
+            {
+                return false;
+                throw ex;
+            }
+        }
+
+        /// <summary>
+        /// 搜狗搜素
+        /// </summary>
+        /// <param name="keyword"></param>
+        /// <returns></returns>
+        private bool SogouSpiderSearch(string keyword)
+        {
+            List<KeywordRank> keywordRankLs = new List<KeywordRank>();
+
+            string url = string.Format("http://www.sogou.com/web?query={0}", HttpUtility.UrlEncode(keyword, Encoding.UTF8));
             HtmlDocument htmlDoc = webClient.Load(url);
             HtmlNodeCollection leftLinkNodes = htmlDoc.DocumentNode.SelectNodes(".//div[@class='spread']/ul[contains(@id,'djbox')]/li");
             int rank = 1;
